@@ -37,9 +37,9 @@ class Customer implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $username = null;
 
     /**
-     * @var Collection<int, user>
+     * @var Collection<int, AppUser>
      */
-    #[ORM\OneToMany(targetEntity: user::class, mappedBy: 'customer', orphanRemoval: true)]
+    #[ORM\OneToMany(targetEntity: AppUser::class, mappedBy: 'customer', orphanRemoval: true)]
     private Collection $users;
 
     public function __construct()
@@ -142,7 +142,7 @@ class Customer implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->users;
     }
 
-    public function addUser(user $user): static
+    public function addUser(AppUser $user): static
     {
         if (!$this->users->contains($user)) {
             $this->users->add($user);
@@ -152,7 +152,7 @@ class Customer implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function removeUser(user $user): static
+    public function removeUser(AppUser $user): static
     {
         if ($this->users->removeElement($user)) {
             // set the owning side to null (unless already changed)
