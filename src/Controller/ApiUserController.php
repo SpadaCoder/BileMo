@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\AppUser;
 use App\Repository\AppUserRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -28,4 +29,12 @@ class ApiUserController extends AbstractController
             $jsonUser = $serializer->serialize($appUser, 'json', ['groups' => 'show_users']);
             return new JsonResponse($jsonUser, Response::HTTP_OK, [], true);
     }
+
+    #[Route('/api/users/{id}', name: 'app_api_delete_user', methods: ['DELETE'])]
+    public function deleteUser(AppUser $appUser, EntityManagerInterface $em): JsonResponse{
+        $em->remove($appUser);
+        $em->flush();
+        return new JsonResponse(null, Response::HTTP_NO_CONTENT);
+    }
+
 }
