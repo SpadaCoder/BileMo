@@ -9,6 +9,7 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: CustomerRepository::class)]
 #[ORM\UniqueConstraint(name: 'UNIQ_IDENTIFIER_EMAIL', fields: ['email'])]
@@ -22,6 +23,9 @@ class Customer implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\Column(length: 180)]
     #[Groups(['show_users'])]
+    #[Assert\Unique]
+    #[Assert\NotBlank(message: "Le mail est obligatoire")]
+    #[Assert\Length(min: 1, max: 255, minMessage: "Le mail doit faire au moins {{ limit }} caractères", maxMessage: "Le mail ne peut pas faire plus de {{ limit }} caractères")]
     private ?string $email = null;
 
     /**
@@ -34,10 +38,12 @@ class Customer implements UserInterface, PasswordAuthenticatedUserInterface
      * @var string The hashed password
      */
     #[ORM\Column]
+    #[Assert\NotBlank(message: "Le mot de passe est obligatoire")]
     private ?string $password = null;
 
     #[ORM\Column(length: 150)]
     #[Groups(['show_users'])]
+    #[Assert\NotBlank(message: "Le nom d'utilisateur est obligatoire")]
     private ?string $username = null;
 
     /**

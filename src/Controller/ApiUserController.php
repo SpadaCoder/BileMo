@@ -8,12 +8,14 @@ use App\Repository\AppUserRepository;
 use App\Repository\CustomerRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Bundle\MakerBundle\Validator;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class ApiUserController extends AbstractController
 {
@@ -47,7 +49,8 @@ class ApiUserController extends AbstractController
         Request $request,
         SerializerInterface $serializer,
         EntityManagerInterface $em,
-        UrlGeneratorInterface $urlGenerator
+        UrlGeneratorInterface $urlGenerator,
+        ValidatorInterface $validator
     ): JsonResponse {
         // Décoder les données JSON pour récupérer l'ID du customer
         $data = json_decode($request->getContent(), true);
@@ -55,6 +58,13 @@ class ApiUserController extends AbstractController
         // Désérialiser l'utilisateur à partir des données JSON
         $user = $serializer->deserialize($request->getContent(), AppUser::class, 'json');
         $user->setCreatedAt(new \DateTimeImmutable());
+
+        // On vérifie les erreurs
+        $errors = $validator->validate($user);
+
+        if ($errors->count() > 0) {
+            return new JsonResponse($serializer->serialize($errors, 'json'), JsonResponse::HTTP_BAD_REQUEST, [], true);
+        }
 
         // Charger l'entité Customer correspondante
         $customer = $em->getRepository(Customer::class)->find($data['customer']);
