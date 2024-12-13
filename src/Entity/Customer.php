@@ -85,6 +85,15 @@ class Customer implements UserInterface, PasswordAuthenticatedUserInterface
     }
 
     /**
+     * Méthode getCustomername qui permet de retourner le champ qui est utilisé pour l'authentification.
+     * 
+     * @return string
+     */
+    public function getUsername(): string {
+        return $this->getUserIdentifier();
+    }
+
+    /**
      * @see UserInterface
      *
      * @return list<string>
@@ -132,12 +141,12 @@ class Customer implements UserInterface, PasswordAuthenticatedUserInterface
         // $this->plainPassword = null;
     }
 
-    public function getUsername(): ?string
+    public function getAppUsername(): ?string
     {
         return $this->username;
     }
 
-    public function setUsername(string $username): static
+    public function setAppUsername(string $username): static
     {
         $this->username = $username;
 

@@ -19,17 +19,17 @@ class CustomerFixtures extends Fixture
 
   public function load(ObjectManager $manager): void
   {
-      //admin user
+      //Création d'un user "normal"
       $customer = new Customer();
-      $customer->setUsername("Company");
+      $customer->setAppUsername("Company");
       $customer->setEmail("company@mail.com");
-      $customer->setRoles(["ROLE_ADMIN"]);
+      $customer->setRoles(["ROLE_USER"]);
       $customer->setPassword($this->userPasswordHasher->hashPassword($customer, "123456"));
       $manager->persist($customer);
 
-      //admin user
+      //Création d'un user "admin"
       $customerAdmin = new Customer();
-      $customerAdmin->setUsername("Admin");
+      $customerAdmin->setAppUsername("Admin");
       $customerAdmin->setEmail("admin@mail.com");
       $customerAdmin->setRoles(["ROLE_ADMIN"]);
       $customerAdmin->setPassword($this->userPasswordHasher->hashPassword($customerAdmin,"123456"));
