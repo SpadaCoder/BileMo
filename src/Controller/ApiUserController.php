@@ -7,6 +7,7 @@ use App\Entity\Customer;
 use App\Repository\AppUserRepository;
 use App\Repository\CustomerRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\IsGranted;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Bundle\MakerBundle\Validator;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -45,6 +46,7 @@ class ApiUserController extends AbstractController
     }
 
     #[Route('/api/users', name: 'app_api_create_user', methods: ['POST'])]
+    #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour créer un utilisateur')]
     public function createUser(
         Request $request,
         SerializerInterface $serializer,
