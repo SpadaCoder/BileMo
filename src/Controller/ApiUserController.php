@@ -5,7 +5,6 @@ namespace App\Controller;
 use App\Entity\AppUser;
 use App\Entity\Customer;
 use App\Repository\AppUserRepository;
-use App\Repository\CustomerRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\IsGranted;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -17,29 +16,41 @@ use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Symfony\Contracts\Cache\ItemInterface;
+use Symfony\Contracts\Cache\TagAwareCacheInterface;
 
 class ApiUserController extends AbstractController
 {
     #[Route('/api/users', name: 'app_api_user', methods: ['GET'])]
-    public function getAllMobiles(AppUserRepository $appUserRepository, SerializerInterface $serializer): JsonResponse
+    public function getAllUsers(AppUserRepository $appUserRepository, SerializerInterface $serializer, Request $request, TagAwareCacheInterface $cache): JsonResponse
     {
-        $userList = $appUserRepository->findAll();
+        $page = $request->get('page',1);
+        $limit = $request->get('limit',1);
 
-        $jsonUserList = $serializer->serialize($userList, 'json', ['groups' => 'show_users']);
+        $idCache = "getAllUsers-" . $page . "-" . $limit;
+
+        $jsonUserList = $cache->get($idCache, function (ItemInterface $item) use ($appUserRepository, $page, $limit, $serializer) {
+            echo ("L'ELEMENT N'EST PAS ENCORE EN CACHE !\n");
+            $item->tag("usersCache");
+            $userList = $appUserRepository->findAllWithPagination($page, $limit);
+            return $serializer->serialize($userList, 'json', ['groups' => 'show_users']);
+        });      
 
         return new JsonResponse($jsonUserList, Response::HTTP_OK, [], true);
     }
 
     #[Route('/api/users/{id}', name: 'app_api_detail_user', methods: ['GET'])]
-    public function getDetailMobile(AppUser $appUser, SerializerInterface $serializer): JsonResponse
+    public function getDetailUser(AppUser $appUser, SerializerInterface $serializer): JsonResponse
     {
         $jsonUser = $serializer->serialize($appUser, 'json', ['groups' => 'show_users']);
         return new JsonResponse($jsonUser, Response::HTTP_OK, [], true);
     }
 
     #[Route('/api/users/{id}', name: 'app_api_delete_user', methods: ['DELETE'])]
-    public function deleteUser(AppUser $appUser, EntityManagerInterface $em): JsonResponse
+    #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour créer un utilisateur')]
+    public function deleteUser(AppUser $appUser, EntityManagerInterface $em, TagAwareCacheInterface $cache): JsonResponse
     {
+        $cache->invalidateTags(["usersCache"]);
         $em->remove($appUser);
         $em->flush();
         return new JsonResponse(null, Response::HTTP_NO_CONTENT);
