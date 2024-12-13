@@ -22,7 +22,7 @@ class ApiMobileController extends AbstractController
         return new JsonResponse($jsonMobileList, Response::HTTP_OK, [], true);
     }
 
-    #[Route('/api/mobiles/{id}', name: 'app_api_mobile', methods: ['GET'])]
+    #[Route('/api/mobiles/{id}', name: 'app_api_detail_mobile', methods: ['GET'])]
     public function getDetailMobile(Mobile $mobile, SerializerInterface $serializer): JsonResponse
     {
             $jsonMobile = $serializer->serialize($mobile, 'json');
