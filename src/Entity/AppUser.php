@@ -5,6 +5,7 @@ namespace App\Entity;
 use App\Repository\AppUserRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: AppUserRepository::class)]
 class AppUser
@@ -17,14 +18,18 @@ class AppUser
 
     #[ORM\Column(length: 30)]
     #[Groups(['show_users'])]
+    #[Assert\NotBlank(message: "Le prénom est obligatoire")]
     private ?string $firstname = null;
 
     #[ORM\Column(length: 30)]
     #[Groups(['show_users'])]
+    #[Assert\NotBlank(message: "Le nom est obligatoire")]
     private ?string $lastname = null;
 
     #[ORM\Column(length: 255)]
     #[Groups(['show_users'])]
+    #[Assert\NotBlank(message: "Le mail est obligatoire")]
+    #[Assert\Length(min: 1, max: 255, minMessage: "Le mail doit faire au moins {{ limit }} caractères", maxMessage: "Le mail ne peut pas faire plus de {{ limit }} caractères")]
     private ?string $email = null;
 
     #[ORM\Column]
