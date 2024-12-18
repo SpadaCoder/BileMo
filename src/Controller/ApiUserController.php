@@ -19,9 +19,59 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 use Symfony\Contracts\Cache\TagAwareCacheInterface;
+use Nelmio\ApiDocBundle\Annotation\Model;
+use Nelmio\ApiDocBundle\Annotation\Security;
+use OpenApi\Annotations as OA;
+
 
 class ApiUserController extends AbstractController
 {
+    /**
+   * Liste des utilisateurs d'un client enregistré
+   * @Route("/api/users", name="app_api_user", methods={"GET"})
+   * @OA\Response(
+   *     response=200,
+   *     description="Renvoie la liste des utilisateurs d'un client enregistré",
+   *     @OA\JsonContent(
+   *        type="array",
+   *        @OA\Items(ref=@Model(type=User::class, groups={"show_users"}))
+   *     )
+   * )
+   * )
+   * @OA\Response(
+   *     response=401,
+   *     description="Jeton JWT non autorisé et expiré",
+   *     @OA\JsonContent(
+   *        @OA\Property(
+   *         property="code",
+   *         type="integer",
+   *         example="401"
+   *        ),
+   *        @OA\Property(
+   *         property="message",
+   *         type="string",
+   *         example="Jeton JWT expiré"
+   *        ),
+   *     )
+   * )
+   * @OA\Parameter(
+   *     name="page",
+   *     example="1",
+   *     in="query",
+   *     description="Page sélectionnée",
+   *     @OA\Schema(type="int")
+   * )
+   * @OA\Parameter(
+   *     name="limit",
+   *     example="2",
+   *     in="query",
+   *     description="Nombre max d'élément à récupérer souhaité",
+   *     @OA\Schema(type="int")
+   * )
+   *
+   * @OA\Tag(name="Users")
+   * @Security(name="Bearer")
+   */
     #[Route('/api/users', name: 'app_api_user', methods: ['GET'])]
     public function getAllUsers(AppUserRepository $appUserRepository, SerializerInterface $serializer, Request $request, TagAwareCacheInterface $cache): JsonResponse
     {
@@ -41,6 +91,46 @@ class ApiUserController extends AbstractController
         return new JsonResponse($jsonUserList, Response::HTTP_OK, [], true);
     }
 
+    /**
+   * Affiche le détail d'un utilisateur
+   * @Route("/api/user/{id}", name="app_api_detail_user", methods={"GET"})
+   * @OA\Response(
+   *     response=Response::HTTP_OK,
+   *     description="Renvoie l'utilisateur selon l'identifiant",
+   *     @Model(type=User::class, groups={"show_users"})
+   * )
+   *
+   * @OA\Response(
+   *     response=401,
+   *     description="Jeton JWT non autorisé et expiré",
+   *     @OA\JsonContent(
+   *        @OA\Property(
+   *         property="code",
+   *         type="integer",
+   *         example="401"
+   *        ),
+   *        @OA\Property(
+   *         property="message",
+   *         type="string",
+   *         example="Jeton JWT expiré"
+   *        ),
+   *     )
+   * )
+   * @OA\Response (
+   *   response=404,
+   *   description="Aucun utilisateur trouvé pour cet identifiant",
+   *     @OA\JsonContent(
+   *        @OA\Property(
+   *         property="error",
+   *         type="string",
+   *         example="Cet utilisateur n'existe pas"
+   *        )
+   *     )
+   * )
+   * )
+   * @OA\Tag(name="Users")
+   * @Security(name="Bearer")
+   */
     #[Route('/api/users/{id}', name: 'app_api_detail_user', methods: ['GET'])]
     public function getDetailUser(AppUser $appUser, SerializerInterface $serializer): JsonResponse
     {
@@ -49,6 +139,22 @@ class ApiUserController extends AbstractController
         return new JsonResponse($jsonUser, Response::HTTP_OK, [], true);
     }
 
+    /**
+   * Supprimer un utilisateur pour un client enregistré
+   * @Route("/api/user/{id}", name="app_api_delete_user", methods={"DELETE"})
+   *
+   * @OA\Response(
+   *     response=Response::HTTP_NO_CONTENT,
+   *     description="Aucun contenu"
+   * )
+   ** @OA\Response(
+   *     response=Response::HTTP_UNAUTHORIZED,
+   *     description="Non autorisé"
+   * )
+   * @OA\Tag(name="Users")
+   * @Security(name="Bearer")
+   * @IsGranted("ROLE_ADMIN")
+   */
     #[Route('/api/users/{id}', name: 'app_api_delete_user', methods: ['DELETE'])]
     #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour créer un utilisateur')]
     public function deleteUser(AppUser $appUser, EntityManagerInterface $em, TagAwareCacheInterface $cache): JsonResponse
@@ -59,6 +165,98 @@ class ApiUserController extends AbstractController
         return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }
 
+    /**
+   * Créer un nouvel utilisateur pour un client enregistré
+   * @Route("/api/user", name="app_api_create_user", methods={"POST"})
+   *
+   * @OA\RequestBody (
+   *      required=true,
+   *      @OA\MediaType(
+   *        mediaType="application/json",
+   *        @OA\Schema (
+   *          @OA\Property(
+   *            property="firstname",
+   *            description="le prénom du nouvel utilisateur",
+   *            type="string",
+   *            example="Sam"
+   *          ),
+   *          @OA\Property(
+   *            property="lastname",
+   *            description="le nom du nouvel utilisateur",
+   *            type="string",
+   *            example="Sung"
+   *          ),
+   *          @OA\Property(
+   *            property="email",
+   *            description="email du nouvel utilisateur",
+   *            type="email",
+   *            example="sam.sung@galaxymail.com"
+   *          )
+   *        )
+   *      )
+   *   )
+   *
+   *
+   * @OA\Response(
+   *     response=201,
+   *     description="Créer un nouvel utilisateur",
+   *     @OA\JsonContent(
+   *        @OA\Property(
+   *          property="id",
+   *          type="integer",
+   *          example="43"
+   *          ),
+   *        @OA\Property(
+   *          property="firstname",
+   *          type="string",
+   *          example="Sam"
+   *          ),
+   *          @OA\Property(
+   *          property="lastname",
+   *          type="string",
+   *          example="Sung"
+   *          ),
+   *          @OA\Property(
+   *          property="email",
+   *          type="string",
+   *          example="sam.sung@galaxymail.com"
+   *          )
+   *     )
+   * )
+   * @OA\Response(
+   *     response=401,
+   *     description="Jeton JWT non autorisé et expiré",
+   *     @OA\JsonContent(
+   *        @OA\Property(
+   *         property="code",
+   *         type="integer",
+   *         example="401"
+   *        ),
+   *        @OA\Property(
+   *         property="message",
+   *         type="string",
+   *         example="Jeton JWT expiré"
+   *        ),
+   *     )
+   * )
+   * @OA\Response(
+   *     response=409,
+   *     description="Entity already exist",
+   *     @OA\JsonContent(
+   *        @OA\Property(
+   *         property="errors",
+   *         type="array",
+   *         @OA\Items(
+   *          type="string",
+   *          example="Email déjà utilisé"
+   *          )
+   *        )
+   *     )
+   * )
+   * @OA\Tag(name="Users")
+   * @Security(name="Bearer")
+   * @IsGranted("ROLE_ADMIN")
+   */
     #[Route('/api/users', name: 'app_api_create_user', methods: ['POST'])]
     #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour créer un utilisateur')]
     public function createUser(
