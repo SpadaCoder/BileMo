@@ -6,13 +6,14 @@ use App\Entity\AppUser;
 use App\Entity\Customer;
 use App\Repository\AppUserRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use JMS\Serializer\SerializationContext;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\IsGranted;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Bundle\MakerBundle\Validator;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Serializer\SerializerInterface;
+use JMS\Serializer\SerializerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
@@ -33,7 +34,8 @@ class ApiUserController extends AbstractController
             echo ("L'ELEMENT N'EST PAS ENCORE EN CACHE !\n");
             $item->tag("usersCache");
             $userList = $appUserRepository->findAllWithPagination($page, $limit);
-            return $serializer->serialize($userList, 'json', ['groups' => 'show_users']);
+            $context = SerializationContext::create()->setGroups(["show_users"]);
+            return $serializer->serialize($userList, 'json', $context);
         });      
 
         return new JsonResponse($jsonUserList, Response::HTTP_OK, [], true);
@@ -42,7 +44,8 @@ class ApiUserController extends AbstractController
     #[Route('/api/users/{id}', name: 'app_api_detail_user', methods: ['GET'])]
     public function getDetailUser(AppUser $appUser, SerializerInterface $serializer): JsonResponse
     {
-        $jsonUser = $serializer->serialize($appUser, 'json', ['groups' => 'show_users']);
+        $context = SerializationContext::create()->setGroups(["show_users"]);
+        $jsonUser = $serializer->serialize($appUser, 'json', $context);
         return new JsonResponse($jsonUser, Response::HTTP_OK, [], true);
     }
 
@@ -88,7 +91,8 @@ class ApiUserController extends AbstractController
         $em->flush();
 
         // Générer la réponse JSON
-        $jsonUser = $serializer->serialize($user, 'json', ['groups' => 'show_users']);
+        $context = SerializationContext::create()->setGroups(["show_users"]);
+        $jsonUser = $serializer->serialize($user, 'json', $context);
 
         // Générer l'URL de l'utilisateur créé
         $location = $urlGenerator->generate('app_api_detail_user', ['id' => $user->getId()], UrlGeneratorInterface::ABSOLUTE_URL);
