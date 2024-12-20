@@ -28,9 +28,8 @@ class ApiUserController extends AbstractController
 {
     /**
    * Liste des utilisateurs d'un client enregistré
-   * @Route("/api/users", name="app_api_user", methods={"GET"})
    * @OA\Response(
-   *     response=200,
+   *     response=Response::HTTP_OK,
    *     description="Renvoie la liste des utilisateurs d'un client enregistré",
    *     @OA\JsonContent(
    *        type="array",
@@ -81,10 +80,10 @@ class ApiUserController extends AbstractController
         $idCache = "getAllUsers-" . $page . "-" . $limit;
 
         $jsonUserList = $cache->get($idCache, function (ItemInterface $item) use ($appUserRepository, $page, $limit, $serializer) {
-            echo ("L'ELEMENT N'EST PAS ENCORE EN CACHE !\n");
             $item->tag("usersCache");
             $userList = $appUserRepository->findAllWithPagination($page, $limit);
             $context = SerializationContext::create()->setGroups(["show_users"]);
+
             return $serializer->serialize($userList, 'json', $context);
         });      
 
@@ -93,7 +92,6 @@ class ApiUserController extends AbstractController
 
     /**
    * Affiche le détail d'un utilisateur
-   * @Route("/api/user/{id}", name="app_api_detail_user", methods={"GET"})
    * @OA\Response(
    *     response=Response::HTTP_OK,
    *     description="Renvoie l'utilisateur selon l'identifiant",
@@ -101,7 +99,7 @@ class ApiUserController extends AbstractController
    * )
    *
    * @OA\Response(
-   *     response=401,
+   *     response=Response::HTTP_UNAUTORIZED,
    *     description="Jeton JWT non autorisé et expiré",
    *     @OA\JsonContent(
    *        @OA\Property(
@@ -117,7 +115,7 @@ class ApiUserController extends AbstractController
    *     )
    * )
    * @OA\Response (
-   *   response=404,
+   *   response=Response::HTTP_NOT_FOUND,
    *   description="Aucun utilisateur trouvé pour cet identifiant",
    *     @OA\JsonContent(
    *        @OA\Property(
@@ -136,12 +134,12 @@ class ApiUserController extends AbstractController
     {
         $context = SerializationContext::create()->setGroups(["show_users"]);
         $jsonUser = $serializer->serialize($appUser, 'json', $context);
+
         return new JsonResponse($jsonUser, Response::HTTP_OK, [], true);
     }
 
     /**
    * Supprimer un utilisateur pour un client enregistré
-   * @Route("/api/user/{id}", name="app_api_delete_user", methods={"DELETE"})
    *
    * @OA\Response(
    *     response=Response::HTTP_NO_CONTENT,
@@ -153,21 +151,22 @@ class ApiUserController extends AbstractController
    * )
    * @OA\Tag(name="Users")
    * @Security(name="Bearer")
-   * @IsGranted("ROLE_ADMIN")
    */
     #[Route('/api/users/{id}', name: 'app_api_delete_user', methods: ['DELETE'])]
-    #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour créer un utilisateur')]
+    #[IsGranted('IS_AUTHENTICATED_FULLY', message: 'Vous n\'avez pas les droits suffisants pour créer un utilisateur')]
     public function deleteUser(AppUser $appUser, EntityManagerInterface $em, TagAwareCacheInterface $cache): JsonResponse
     {
+        $this->denyAccessUnlessGranted("userDelete",$appUser);
+
         $cache->invalidateTags(["usersCache"]);
         $em->remove($appUser);
         $em->flush();
+
         return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }
 
     /**
    * Créer un nouvel utilisateur pour un client enregistré
-   * @Route("/api/user", name="app_api_create_user", methods={"POST"})
    *
    * @OA\RequestBody (
    *      required=true,
@@ -198,7 +197,7 @@ class ApiUserController extends AbstractController
    *
    *
    * @OA\Response(
-   *     response=201,
+   *     response=Response::HTTP_CREATED,
    *     description="Créer un nouvel utilisateur",
    *     @OA\JsonContent(
    *        @OA\Property(
@@ -224,7 +223,7 @@ class ApiUserController extends AbstractController
    *     )
    * )
    * @OA\Response(
-   *     response=401,
+   *     response=Response::HTTP_UNAUTHORIZED,
    *     description="Jeton JWT non autorisé et expiré",
    *     @OA\JsonContent(
    *        @OA\Property(
@@ -240,8 +239,8 @@ class ApiUserController extends AbstractController
    *     )
    * )
    * @OA\Response(
-   *     response=409,
-   *     description="Entity already exist",
+   *     response=Response::HTTP_CONFLICT,
+   *     description="Elément déjà existant",
    *     @OA\JsonContent(
    *        @OA\Property(
    *         property="errors",
@@ -255,10 +254,9 @@ class ApiUserController extends AbstractController
    * )
    * @OA\Tag(name="Users")
    * @Security(name="Bearer")
-   * @IsGranted("ROLE_ADMIN")
    */
     #[Route('/api/users', name: 'app_api_create_user', methods: ['POST'])]
-    #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour créer un utilisateur')]
+    #[IsGranted('IS_AUTHENTICATED_FULLY', message: 'Vous n\'avez pas les droits suffisants pour créer un utilisateur')]
     public function createUser(
         Request $request,
         SerializerInterface $serializer,
@@ -266,6 +264,7 @@ class ApiUserController extends AbstractController
         UrlGeneratorInterface $urlGenerator,
         ValidatorInterface $validator
     ): JsonResponse {
+
         // Décoder les données JSON pour récupérer l'ID du customer
         $data = json_decode($request->getContent(), true);
 
