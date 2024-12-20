@@ -18,8 +18,6 @@ class ApiMobileController extends AbstractController
     /**
    * Obtenir la liste de mobiles
    *
-   * @Route("/api/mobiles", name="app_api_mobile", methods={"GET"})
-   *
    * @OA\Response(
    *     response=Response::HTTP_OK,
    *     description="Renvoie tous les mobiles.",
@@ -32,7 +30,7 @@ class ApiMobileController extends AbstractController
    *     name="page",
    *     example="1",
    *     in="query",
-   *     description="Séléectionner la page",
+   *     description="Sélectionner la page",
    *     @OA\Schema(type="int")
    * )
    * @OA\Parameter(
@@ -58,14 +56,13 @@ class ApiMobileController extends AbstractController
     /**
    * Obtenir les détails d'un mobile
    *
-   * @Route("/api/mobile/{id}", name="app_api_detail_mobile", methods={"GET"})
    * @OA\Response(
    *     response=Response::HTTP_OK,
    *     description="Renvoie le mobile selon l'identifiant",
    *     @Model(type=Mobile::class)
    * )
    * @OA\Response (
-   *   response=404,
+   *   response=Response::HTTP_NOT_FOUND,
    *   description="Aucun produit trouvé pour cet identifiant",
    *     @OA\JsonContent(
    *        @OA\Property(
@@ -84,6 +81,7 @@ class ApiMobileController extends AbstractController
     public function getDetailMobile(Mobile $mobile, SerializerInterface $serializer): JsonResponse
     {
             $jsonMobile = $serializer->serialize($mobile, 'json');
+
             return new JsonResponse($jsonMobile, Response::HTTP_OK, [], true);
     }
 }
