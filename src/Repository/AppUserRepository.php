@@ -16,9 +16,11 @@ class AppUserRepository extends ServiceEntityRepository
         parent::__construct($registry, AppUser::class);
     }
 
-    public function findAllWithPagination($page, $limit)
+    public function findAllWithPagination($customer, $page, $limit)
     {
-        $qb = $this->createQueryBuilder('b')
+        $qb = $this->createQueryBuilder('u')
+            ->where('u.customer = :customer')
+            ->setParameter('customer', $customer)
             ->setFirstResult(($page - 1) * $limit)
             ->setMaxResults($limit);
         return $qb->getQuery()->getResult();
