@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\AppUser;
 use App\Entity\Customer;
 use App\Repository\AppUserRepository;
+use App\Security\Voter\UserVoter;
 use Doctrine\ORM\EntityManagerInterface;
 use JMS\Serializer\SerializationContext;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\IsGranted;
@@ -22,7 +23,7 @@ use Symfony\Contracts\Cache\TagAwareCacheInterface;
 use Nelmio\ApiDocBundle\Annotation\Model;
 use Nelmio\ApiDocBundle\Annotation\Security;
 use OpenApi\Annotations as OA;
-
+use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 
 class ApiUserController extends AbstractController
 {
@@ -72,16 +73,22 @@ class ApiUserController extends AbstractController
    * @Security(name="Bearer")
    */
     #[Route('/api/users', name: 'app_api_user', methods: ['GET'])]
-    public function getAllUsers(AppUserRepository $appUserRepository, SerializerInterface $serializer, Request $request, TagAwareCacheInterface $cache): JsonResponse
+    public function getAllUsers(AppUserRepository $appUser, SerializerInterface $serializer, Request $request, TagAwareCacheInterface $cache, TokenStorageInterface $token): JsonResponse
     {
+        $customer = $token->getToken()->getUser();
+
+    if (!$customer) {
+        throw $this->createAccessDeniedException('Vous devez être connecté pour accéder à ces données.');
+    }
+
         $page = $request->get('page',1);
         $limit = $request->get('limit',1);
 
         $idCache = "getAllUsers-" . $page . "-" . $limit;
 
-        $jsonUserList = $cache->get($idCache, function (ItemInterface $item) use ($appUserRepository, $page, $limit, $serializer) {
+        $jsonUserList = $cache->get($idCache, function (ItemInterface $item) use ($appUser, $customer, $page, $limit, $serializer) {
             $item->tag("usersCache");
-            $userList = $appUserRepository->findAllWithPagination($page, $limit);
+            $userList = $appUser->findAllWithPagination($customer, $page, $limit);
             $context = SerializationContext::create()->setGroups(["show_users"]);
 
             return $serializer->serialize($userList, 'json', $context);
@@ -99,7 +106,7 @@ class ApiUserController extends AbstractController
    * )
    *
    * @OA\Response(
-   *     response=Response::HTTP_UNAUTORIZED,
+   *     response=Response::HTTP_UNAUTHORIZED,
    *     description="Jeton JWT non autorisé et expiré",
    *     @OA\JsonContent(
    *        @OA\Property(
@@ -132,6 +139,8 @@ class ApiUserController extends AbstractController
     #[Route('/api/users/{id}', name: 'app_api_detail_user', methods: ['GET'])]
     public function getDetailUser(AppUser $appUser, SerializerInterface $serializer): JsonResponse
     {
+        $this->denyAccessUnlessGranted(UserVoter::VIEW,$appUser);
+
         $context = SerializationContext::create()->setGroups(["show_users"]);
         $jsonUser = $serializer->serialize($appUser, 'json', $context);
 
@@ -156,7 +165,7 @@ class ApiUserController extends AbstractController
     #[IsGranted('IS_AUTHENTICATED_FULLY', message: 'Vous n\'avez pas les droits suffisants pour créer un utilisateur')]
     public function deleteUser(AppUser $appUser, EntityManagerInterface $em, TagAwareCacheInterface $cache): JsonResponse
     {
-        $this->denyAccessUnlessGranted("userDelete",$appUser);
+        $this->denyAccessUnlessGranted(UserVoter::DELETE, $appUser);
 
         $cache->invalidateTags(["usersCache"]);
         $em->remove($appUser);
@@ -262,7 +271,8 @@ class ApiUserController extends AbstractController
         SerializerInterface $serializer,
         EntityManagerInterface $em,
         UrlGeneratorInterface $urlGenerator,
-        ValidatorInterface $validator
+        ValidatorInterface $validator,
+        TokenStorageInterface $token
     ): JsonResponse {
 
         // Décoder les données JSON pour récupérer l'ID du customer
@@ -280,7 +290,7 @@ class ApiUserController extends AbstractController
         }
 
         // Charger l'entité Customer correspondante
-        $customer = $em->getRepository(Customer::class)->find($data['customer']);
+        $customer = $token->getToken()->getUser();
         $user->setCustomer($customer);
 
         // Sauvegarder l'utilisateur
