@@ -137,12 +137,21 @@ class ApiUserController extends AbstractController
    * @Security(name="Bearer")
    */
     #[Route('/api/users/{id}', name: 'app_api_detail_user', methods: ['GET'])]
-    public function getDetailUser(AppUser $appUser, SerializerInterface $serializer): JsonResponse
+    public function getDetailUser(AppUser $appUser, SerializerInterface $serializer, TagAwareCacheInterface $cache): JsonResponse
     {
-        $this->denyAccessUnlessGranted(UserVoter::VIEW,$appUser);
+        $this->denyAccessUnlessGranted('AppUserView',$appUser);
 
+        $idCache = "getUser" . $appUser->getId();
+
+        // Vérifier si les données sont déjà en cache
+        $jsonUser = $cache->get($idCache, function (ItemInterface $item) use ($appUser, $serializer) {
+        // Spécifier que l'élément de cache doit être invalidé lorsque le cache "usersCache" est vidé
+        $item->tag("usersCache");
+
+        // Sérialiser l'utilisateur et le renvoyer
         $context = SerializationContext::create()->setGroups(["show_users"]);
-        $jsonUser = $serializer->serialize($appUser, 'json', $context);
+        return $serializer->serialize($appUser, 'json', $context);
+        });
 
         return new JsonResponse($jsonUser, Response::HTTP_OK, [], true);
     }
@@ -163,11 +172,10 @@ class ApiUserController extends AbstractController
    */
     #[Route('/api/users/{id}', name: 'app_api_delete_user', methods: ['DELETE'])]
     #[IsGranted('IS_AUTHENTICATED_FULLY', message: 'Vous n\'avez pas les droits suffisants pour créer un utilisateur')]
-    public function deleteUser(AppUser $appUser, EntityManagerInterface $em, TagAwareCacheInterface $cache): JsonResponse
+    public function deleteUser(AppUser $appUser, EntityManagerInterface $em): JsonResponse
     {
-        $this->denyAccessUnlessGranted(UserVoter::DELETE, $appUser);
+        $this->denyAccessUnlessGranted('AppUserDelete', $appUser);
 
-        $cache->invalidateTags(["usersCache"]);
         $em->remove($appUser);
         $em->flush();
 
