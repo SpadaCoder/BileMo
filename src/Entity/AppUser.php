@@ -60,6 +60,7 @@ class AppUser
     #[Groups(['show_users'])]
     private ?Customer $customer = null;
 
+    
     public function __contruct()
     {
         $this->createdAt = new \DateTimeImmutable();

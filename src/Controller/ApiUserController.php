@@ -27,6 +27,8 @@ use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInt
 
 class ApiUserController extends AbstractController
 {
+
+
     /**
    * Liste des utilisateurs d'un client enregistré
    * @OA\Response(
@@ -77,7 +79,7 @@ class ApiUserController extends AbstractController
     {
         $customer = $token->getToken()->getUser();
 
-    if (!$customer) {
+        if (!$customer) {
         throw $this->createAccessDeniedException('Vous devez être connecté pour accéder à ces données.');
     }
 
@@ -86,7 +88,7 @@ class ApiUserController extends AbstractController
 
         $idCache = "getAllUsers-" . $page . "-" . $limit;
 
-        $jsonUserList = $cache->get($idCache, function (ItemInterface $item) use ($appUser, $customer, $page, $limit, $serializer) {
+        $jsonUserList = $cache->get($idCache, function (ItemInterface $item) use ($appUser, $customer, $page, $limit, $serializer){
             $item->tag("usersCache");
             $userList = $appUser->findAllWithPagination($customer, $page, $limit);
             $context = SerializationContext::create()->setGroups(["show_users"]);
@@ -143,14 +145,14 @@ class ApiUserController extends AbstractController
 
         $idCache = "getUser" . $appUser->getId();
 
-        // Vérifier si les données sont déjà en cache
+        // Vérifier si les données sont déjà en cache.
         $jsonUser = $cache->get($idCache, function (ItemInterface $item) use ($appUser, $serializer) {
-        // Spécifier que l'élément de cache doit être invalidé lorsque le cache "usersCache" est vidé
-        $item->tag("usersCache");
+            // Spécifier que l'élément de cache doit être invalidé lorsque le cache "usersCache" est vidé
+            $item->tag("usersCache");
 
-        // Sérialiser l'utilisateur et le renvoyer
-        $context = SerializationContext::create()->setGroups(["show_users"]);
-        return $serializer->serialize($appUser, 'json', $context);
+            // Sérialiser l'utilisateur et le renvoyer.
+            $context = SerializationContext::create()->setGroups(["show_users"]);
+            return $serializer->serialize($appUser, 'json', $context);
         });
 
         return new JsonResponse($jsonUser, Response::HTTP_OK, [], true);
@@ -283,33 +285,30 @@ class ApiUserController extends AbstractController
         TokenStorageInterface $token
     ): JsonResponse {
 
-        // Décoder les données JSON pour récupérer l'ID du customer
-        $data = json_decode($request->getContent(), true);
-
-        // Désérialiser l'utilisateur à partir des données JSON
+        // Désérialiser l'utilisateur à partir des données JSON.
         $user = $serializer->deserialize($request->getContent(), AppUser::class, 'json');
         $user->setCreatedAt(new \DateTimeImmutable());
 
-        // On vérifie les erreurs
+        // On vérifie les erreurs.
         $errors = $validator->validate($user);
 
         if ($errors->count() > 0) {
             return new JsonResponse($serializer->serialize($errors, 'json'), JsonResponse::HTTP_BAD_REQUEST, [], true);
         }
 
-        // Charger l'entité Customer correspondante
+        // Charger l'entité Customer correspondante.
         $customer = $token->getToken()->getUser();
         $user->setCustomer($customer);
 
-        // Sauvegarder l'utilisateur
+        // Sauvegarder l'utilisateur.
         $em->persist($user);
         $em->flush();
 
-        // Générer la réponse JSON
+        // Générer la réponse JSON.
         $context = SerializationContext::create()->setGroups(["show_users"]);
         $jsonUser = $serializer->serialize($user, 'json', $context);
 
-        // Générer l'URL de l'utilisateur créé
+        // Générer l'URL de l'utilisateur créé.
         $location = $urlGenerator->generate('app_api_detail_user', ['id' => $user->getId()], UrlGeneratorInterface::ABSOLUTE_URL);
 
         return new JsonResponse($jsonUser, Response::HTTP_CREATED, ["Location" => $location], true);
