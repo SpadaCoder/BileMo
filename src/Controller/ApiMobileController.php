@@ -51,6 +51,7 @@ class ApiMobileController extends AbstractController
         $jsonMobileList = $serializer->serialize($mobileList, 'json');
 
         return new JsonResponse($jsonMobileList, Response::HTTP_OK, [], true);
+        
     }
 
     /**
