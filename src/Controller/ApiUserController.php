@@ -30,118 +30,118 @@ class ApiUserController extends AbstractController
 
 
     /**
-   * Liste des utilisateurs d'un client enregistré
-   * @OA\Response(
-   *     response=Response::HTTP_OK,
-   *     description="Renvoie la liste des utilisateurs d'un client enregistré",
-   *     @OA\JsonContent(
-   *        type="array",
-   *        @OA\Items(ref=@Model(type=User::class, groups={"show_users"}))
-   *     )
-   * )
-   * )
-   * @OA\Response(
-   *     response=401,
-   *     description="Jeton JWT non autorisé et expiré",
-   *     @OA\JsonContent(
-   *        @OA\Property(
-   *         property="code",
-   *         type="integer",
-   *         example="401"
-   *        ),
-   *        @OA\Property(
-   *         property="message",
-   *         type="string",
-   *         example="Jeton JWT expiré"
-   *        ),
-   *     )
-   * )
-   * @OA\Parameter(
-   *     name="page",
-   *     example="1",
-   *     in="query",
-   *     description="Page sélectionnée",
-   *     @OA\Schema(type="int")
-   * )
-   * @OA\Parameter(
-   *     name="limit",
-   *     example="2",
-   *     in="query",
-   *     description="Nombre max d'élément à récupérer souhaité",
-   *     @OA\Schema(type="int")
-   * )
-   *
-   * @OA\Tag(name="Users")
-   * @Security(name="Bearer")
-   */
+     * Liste des utilisateurs d'un client enregistré
+     * @OA\Response(
+     *     response=Response::HTTP_OK,
+     *     description="Renvoie la liste des utilisateurs d'un client enregistré",
+     *     @OA\JsonContent(
+     *        type="array",
+     *        @OA\Items(ref=@Model(type=User::class, groups={"show_users"}))
+     *     )
+     * )
+     * )
+     * @OA\Response(
+     *     response=401,
+     *     description="Jeton JWT non autorisé et expiré",
+     *     @OA\JsonContent(
+     *        @OA\Property(
+     *         property="code",
+     *         type="integer",
+     *         example="401"
+     *        ),
+     *        @OA\Property(
+     *         property="message",
+     *         type="string",
+     *         example="Jeton JWT expiré"
+     *        ),
+     *     )
+     * )
+     * @OA\Parameter(
+     *     name="page",
+     *     example="1",
+     *     in="query",
+     *     description="Page sélectionnée",
+     *     @OA\Schema(type="int")
+     * )
+     * @OA\Parameter(
+     *     name="limit",
+     *     example="2",
+     *     in="query",
+     *     description="Nombre max d'élément à récupérer souhaité",
+     *     @OA\Schema(type="int")
+     * )
+     *
+     * @OA\Tag(name="Users")
+     * @Security(name="Bearer")
+     */
     #[Route('/api/users', name: 'app_api_user', methods: ['GET'])]
     public function getAllUsers(AppUserRepository $appUser, SerializerInterface $serializer, Request $request, TagAwareCacheInterface $cache, TokenStorageInterface $token): JsonResponse
     {
         $customer = $token->getToken()->getUser();
 
         if (!$customer) {
-        throw $this->createAccessDeniedException('Vous devez être connecté pour accéder à ces données.');
-    }
+            throw $this->createAccessDeniedException('Vous devez être connecté pour accéder à ces données.');
+        }
 
-        $page = $request->get('page',1);
-        $limit = $request->get('limit',1);
+        $page = $request->get('page', 1);
+        $limit = $request->get('limit', 1);
 
         $idCache = "getAllUsers-" . $page . "-" . $limit;
 
-        $jsonUserList = $cache->get($idCache, function (ItemInterface $item) use ($appUser, $customer, $page, $limit, $serializer){
+        $jsonUserList = $cache->get($idCache, function (ItemInterface $item) use ($appUser, $customer, $page, $limit, $serializer) {
             $item->tag("usersCache");
             $userList = $appUser->findAllWithPagination($customer, $page, $limit);
             $context = SerializationContext::create()->setGroups(["show_users"]);
 
             return $serializer->serialize($userList, 'json', $context);
-        });      
+        });
 
         return new JsonResponse($jsonUserList, Response::HTTP_OK, [], true);
     }
 
     /**
-   * Affiche le détail d'un utilisateur
-   * @OA\Response(
-   *     response=Response::HTTP_OK,
-   *     description="Renvoie l'utilisateur selon l'identifiant",
-   *     @Model(type=User::class, groups={"show_users"})
-   * )
-   *
-   * @OA\Response(
-   *     response=Response::HTTP_UNAUTHORIZED,
-   *     description="Jeton JWT non autorisé et expiré",
-   *     @OA\JsonContent(
-   *        @OA\Property(
-   *         property="code",
-   *         type="integer",
-   *         example="401"
-   *        ),
-   *        @OA\Property(
-   *         property="message",
-   *         type="string",
-   *         example="Jeton JWT expiré"
-   *        ),
-   *     )
-   * )
-   * @OA\Response (
-   *   response=Response::HTTP_NOT_FOUND,
-   *   description="Aucun utilisateur trouvé pour cet identifiant",
-   *     @OA\JsonContent(
-   *        @OA\Property(
-   *         property="error",
-   *         type="string",
-   *         example="Cet utilisateur n'existe pas"
-   *        )
-   *     )
-   * )
-   * )
-   * @OA\Tag(name="Users")
-   * @Security(name="Bearer")
-   */
+     * Affiche le détail d'un utilisateur
+     * @OA\Response(
+     *     response=Response::HTTP_OK,
+     *     description="Renvoie l'utilisateur selon l'identifiant",
+     *     @Model(type=User::class, groups={"show_users"})
+     * )
+     *
+     * @OA\Response(
+     *     response=Response::HTTP_UNAUTHORIZED,
+     *     description="Jeton JWT non autorisé et expiré",
+     *     @OA\JsonContent(
+     *        @OA\Property(
+     *         property="code",
+     *         type="integer",
+     *         example="401"
+     *        ),
+     *        @OA\Property(
+     *         property="message",
+     *         type="string",
+     *         example="Jeton JWT expiré"
+     *        ),
+     *     )
+     * )
+     * @OA\Response (
+     *   response=Response::HTTP_NOT_FOUND,
+     *   description="Aucun utilisateur trouvé pour cet identifiant",
+     *     @OA\JsonContent(
+     *        @OA\Property(
+     *         property="error",
+     *         type="string",
+     *         example="Cet utilisateur n'existe pas"
+     *        )
+     *     )
+     * )
+     * )
+     * @OA\Tag(name="Users")
+     * @Security(name="Bearer")
+     */
     #[Route('/api/users/{id}', name: 'app_api_detail_user', methods: ['GET'])]
     public function getDetailUser(AppUser $appUser, SerializerInterface $serializer, TagAwareCacheInterface $cache): JsonResponse
     {
-        $this->denyAccessUnlessGranted('AppUserView',$appUser);
+        $this->denyAccessUnlessGranted('AppUserView', $appUser);
 
         $idCache = "getUser" . $appUser->getId();
 
@@ -159,19 +159,19 @@ class ApiUserController extends AbstractController
     }
 
     /**
-   * Supprimer un utilisateur pour un client enregistré
-   *
-   * @OA\Response(
-   *     response=Response::HTTP_NO_CONTENT,
-   *     description="Aucun contenu"
-   * )
-   ** @OA\Response(
-   *     response=Response::HTTP_UNAUTHORIZED,
-   *     description="Non autorisé"
-   * )
-   * @OA\Tag(name="Users")
-   * @Security(name="Bearer")
-   */
+     * Supprimer un utilisateur pour un client enregistré
+     *
+     * @OA\Response(
+     *     response=Response::HTTP_NO_CONTENT,
+     *     description="Aucun contenu"
+     * )
+     ** @OA\Response(
+     *     response=Response::HTTP_UNAUTHORIZED,
+     *     description="Non autorisé"
+     * )
+     * @OA\Tag(name="Users")
+     * @Security(name="Bearer")
+     */
     #[Route('/api/users/{id}', name: 'app_api_delete_user', methods: ['DELETE'])]
     #[IsGranted('IS_AUTHENTICATED_FULLY', message: 'Vous n\'avez pas les droits suffisants pour créer un utilisateur')]
     public function deleteUser(AppUser $appUser, EntityManagerInterface $em): JsonResponse
@@ -185,95 +185,95 @@ class ApiUserController extends AbstractController
     }
 
     /**
-   * Créer un nouvel utilisateur pour un client enregistré
-   *
-   * @OA\RequestBody (
-   *      required=true,
-   *      @OA\MediaType(
-   *        mediaType="application/json",
-   *        @OA\Schema (
-   *          @OA\Property(
-   *            property="firstname",
-   *            description="le prénom du nouvel utilisateur",
-   *            type="string",
-   *            example="Sam"
-   *          ),
-   *          @OA\Property(
-   *            property="lastname",
-   *            description="le nom du nouvel utilisateur",
-   *            type="string",
-   *            example="Sung"
-   *          ),
-   *          @OA\Property(
-   *            property="email",
-   *            description="email du nouvel utilisateur",
-   *            type="email",
-   *            example="sam.sung@galaxymail.com"
-   *          )
-   *        )
-   *      )
-   *   )
-   *
-   *
-   * @OA\Response(
-   *     response=Response::HTTP_CREATED,
-   *     description="Créer un nouvel utilisateur",
-   *     @OA\JsonContent(
-   *        @OA\Property(
-   *          property="id",
-   *          type="integer",
-   *          example="43"
-   *          ),
-   *        @OA\Property(
-   *          property="firstname",
-   *          type="string",
-   *          example="Sam"
-   *          ),
-   *          @OA\Property(
-   *          property="lastname",
-   *          type="string",
-   *          example="Sung"
-   *          ),
-   *          @OA\Property(
-   *          property="email",
-   *          type="string",
-   *          example="sam.sung@galaxymail.com"
-   *          )
-   *     )
-   * )
-   * @OA\Response(
-   *     response=Response::HTTP_UNAUTHORIZED,
-   *     description="Jeton JWT non autorisé et expiré",
-   *     @OA\JsonContent(
-   *        @OA\Property(
-   *         property="code",
-   *         type="integer",
-   *         example="401"
-   *        ),
-   *        @OA\Property(
-   *         property="message",
-   *         type="string",
-   *         example="Jeton JWT expiré"
-   *        ),
-   *     )
-   * )
-   * @OA\Response(
-   *     response=Response::HTTP_CONFLICT,
-   *     description="Elément déjà existant",
-   *     @OA\JsonContent(
-   *        @OA\Property(
-   *         property="errors",
-   *         type="array",
-   *         @OA\Items(
-   *          type="string",
-   *          example="Email déjà utilisé"
-   *          )
-   *        )
-   *     )
-   * )
-   * @OA\Tag(name="Users")
-   * @Security(name="Bearer")
-   */
+     * Créer un nouvel utilisateur pour un client enregistré
+     *
+     * @OA\RequestBody (
+     *      required=true,
+     *      @OA\MediaType(
+     *        mediaType="application/json",
+     *        @OA\Schema (
+     *          @OA\Property(
+     *            property="firstname",
+     *            description="le prénom du nouvel utilisateur",
+     *            type="string",
+     *            example="Sam"
+     *          ),
+     *          @OA\Property(
+     *            property="lastname",
+     *            description="le nom du nouvel utilisateur",
+     *            type="string",
+     *            example="Sung"
+     *          ),
+     *          @OA\Property(
+     *            property="email",
+     *            description="email du nouvel utilisateur",
+     *            type="email",
+     *            example="sam.sung@galaxymail.com"
+     *          )
+     *        )
+     *      )
+     *   )
+     *
+     *
+     * @OA\Response(
+     *     response=Response::HTTP_CREATED,
+     *     description="Créer un nouvel utilisateur",
+     *     @OA\JsonContent(
+     *        @OA\Property(
+     *          property="id",
+     *          type="integer",
+     *          example="43"
+     *          ),
+     *        @OA\Property(
+     *          property="firstname",
+     *          type="string",
+     *          example="Sam"
+     *          ),
+     *          @OA\Property(
+     *          property="lastname",
+     *          type="string",
+     *          example="Sung"
+     *          ),
+     *          @OA\Property(
+     *          property="email",
+     *          type="string",
+     *          example="sam.sung@galaxymail.com"
+     *          )
+     *     )
+     * )
+     * @OA\Response(
+     *     response=Response::HTTP_UNAUTHORIZED,
+     *     description="Jeton JWT non autorisé et expiré",
+     *     @OA\JsonContent(
+     *        @OA\Property(
+     *         property="code",
+     *         type="integer",
+     *         example="401"
+     *        ),
+     *        @OA\Property(
+     *         property="message",
+     *         type="string",
+     *         example="Jeton JWT expiré"
+     *        ),
+     *     )
+     * )
+     * @OA\Response(
+     *     response=Response::HTTP_CONFLICT,
+     *     description="Elément déjà existant",
+     *     @OA\JsonContent(
+     *        @OA\Property(
+     *         property="errors",
+     *         type="array",
+     *         @OA\Items(
+     *          type="string",
+     *          example="Email déjà utilisé"
+     *          )
+     *        )
+     *     )
+     * )
+     * @OA\Tag(name="Users")
+     * @Security(name="Bearer")
+     */
     #[Route('/api/users', name: 'app_api_create_user', methods: ['POST'])]
     #[IsGranted('IS_AUTHENTICATED_FULLY', message: 'Vous n\'avez pas les droits suffisants pour créer un utilisateur')]
     public function createUser(
@@ -291,6 +291,12 @@ class ApiUserController extends AbstractController
 
         // On vérifie les erreurs.
         $errors = $validator->validate($user);
+
+        // Vérifier si l'email existe déjà dans la base de données.
+        $existingUser = $em->getRepository(AppUser::class)->findOneBy(['email' => $user->getEmail()]);
+        if ($existingUser) {
+            return new JsonResponse(['error' => 'Un user avec ce mail existe déjà'], JsonResponse::HTTP_CONFLICT);
+        }
 
         if ($errors->count() > 0) {
             return new JsonResponse($serializer->serialize($errors, 'json'), JsonResponse::HTTP_BAD_REQUEST, [], true);
